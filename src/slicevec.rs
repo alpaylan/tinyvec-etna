@@ -634,6 +634,29 @@ impl<'s, T> SliceVec<'s, T> {
   }
 }
 
+impl<'s, T> SliceVec<'s, T> {
+  /// Returns the reference to the inner slice of the `SliceVec`.
+  ///
+  /// This returns the full array, even if the `SliceVec` length is currently
+  /// less than that.
+  #[inline(always)]
+  #[must_use]
+  pub const fn as_inner(&self) -> &[T] {
+    &*self.data
+  }
+
+  /// Returns a mutable reference to the inner slice of the `SliceVec`.
+  ///
+  /// This returns the full array, even if the `SliceVec` length is currently
+  /// less than that.
+  #[inline(always)]
+  #[must_use]
+  #[cfg(feature = "latest_stable_rust")]
+  pub const fn as_mut_inner(&mut self) -> &mut [T] {
+    self.data
+  }
+}
+
 #[cfg(feature = "grab_spare_slice")]
 impl<'s, T> SliceVec<'s, T> {
   /// Obtain the shared slice of the array _after_ the active memory.

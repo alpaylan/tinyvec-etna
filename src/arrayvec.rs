@@ -1257,6 +1257,17 @@ impl<A> ArrayVec<A> {
   pub const fn as_inner(&self) -> &A {
     &self.data
   }
+
+  /// Returns a mutable reference to the inner array of the `ArrayVec`.
+  ///
+  /// This returns the full array, even if the `ArrayVec` length is currently
+  /// less than that.
+  #[inline(always)]
+  #[must_use]
+  #[cfg(feature = "latest_stable_rust")]
+  pub const fn as_mut_inner(&mut self) -> &mut A {
+    &mut self.data
+  }
 }
 
 /// Splicing iterator for `ArrayVec`
