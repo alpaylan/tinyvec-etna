@@ -2,6 +2,8 @@
 #![allow(bad_style)]
 #![allow(clippy::redundant_clone)]
 
+#[cfg(feature = "bin-proto")]
+use bin_proto::{BigEndian, BitDecodeExt, BitEncodeExt, Tag, Untagged};
 #[cfg(feature = "serde")]
 use serde_test::{assert_tokens, Token};
 use std::iter::FromIterator;
@@ -474,6 +476,55 @@ fn TinyVec_borsh_de_heap() {
   let buffer = borsh::to_vec(&tv).unwrap();
   let des: TinyVec<[i32; 4]> = borsh::from_slice(&buffer).unwrap();
   assert_eq!(tv, des);
+}
+
+#[cfg(feature = "bin-proto")]
+#[test]
+fn TinyVec_bin_proto_encode_untagged() {
+  let mut values = TinyVec::<[u8; 2]>::new();
+  values.push(0x12);
+  values.push(0x34);
+  values.push(0x56);
+  let mut data = [0u8; 16];
+  let n_bytes = values
+    .encode_bytes_ctx_buf(BigEndian, &mut (), Untagged, &mut data)
+    .unwrap() as usize;
+  assert_eq!(&[0x12, 0x34, 0x56], &data[0..n_bytes]);
+}
+
+#[cfg(feature = "bin-proto")]
+#[test]
+fn TinyVec_bin_proto_decode_tagged() {
+  let (decoded, read_bits) = TinyVec::<[u8; 2]>::decode_bytes_ctx(
+    &[0x12, 0x34, 0x56, 0x78],
+    BigEndian,
+    &mut (),
+    Tag(3usize),
+  )
+  .unwrap();
+  let mut expected = TinyVec::<[u8; 2]>::new();
+  expected.push(0x12);
+  expected.push(0x34);
+  expected.push(0x56);
+  assert_eq!(24, read_bits);
+  assert_eq!(expected, decoded);
+}
+
+#[cfg(feature = "bin-proto")]
+#[test]
+fn TinyVec_bin_proto_decode_untagged() {
+  let decoded = TinyVec::<[u8; 2]>::decode_all_bytes_ctx(
+    &[0x12, 0x34, 0x56],
+    BigEndian,
+    &mut (),
+    Untagged,
+  )
+  .unwrap();
+  let mut expected = TinyVec::<[u8; 2]>::new();
+  expected.push(0x12);
+  expected.push(0x34);
+  expected.push(0x56);
+  assert_eq!(expected, decoded);
 }
 
 #[test]

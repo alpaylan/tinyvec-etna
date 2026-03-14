@@ -273,6 +273,72 @@ where
   }
 }
 
+#[cfg(feature = "bin-proto")]
+#[cfg_attr(docs_rs, doc(cfg(feature = "bin-proto")))]
+impl<Ctx, A> bin_proto::BitEncode<Ctx, bin_proto::Untagged> for TinyVec<A>
+where
+  A: Array,
+  <A as Array>::Item: bin_proto::BitEncode<Ctx>,
+{
+  fn encode<W, E>(
+    &self, write: &mut W, ctx: &mut Ctx, tag: bin_proto::Untagged,
+  ) -> bin_proto::Result<()>
+  where
+    W: bin_proto::BitWrite,
+    E: bin_proto::Endianness,
+  {
+    <[<A as Array>::Item] as bin_proto::BitEncode<_, _>>::encode::<_, E>(
+      self.as_slice(),
+      write,
+      ctx,
+      tag,
+    )
+  }
+}
+
+#[cfg(feature = "bin-proto")]
+#[cfg_attr(docs_rs, doc(cfg(feature = "bin-proto")))]
+impl<Tag, Ctx, A> bin_proto::BitDecode<Ctx, bin_proto::Tag<Tag>> for TinyVec<A>
+where
+  A: Array,
+  <A as Array>::Item: bin_proto::BitDecode<Ctx>,
+  Tag: ::core::convert::TryInto<usize>,
+{
+  fn decode<R, E>(
+    read: &mut R, ctx: &mut Ctx, tag: bin_proto::Tag<Tag>,
+  ) -> bin_proto::Result<Self>
+  where
+    R: bin_proto::BitRead,
+    E: bin_proto::Endianness,
+  {
+    let item_count =
+      tag.0.try_into().map_err(|_| bin_proto::Error::TagConvert)?;
+    let mut values = Self::with_capacity(item_count);
+    for _ in 0..item_count {
+      values.push(bin_proto::BitDecode::<_, _>::decode::<_, E>(read, ctx, ())?);
+    }
+    Ok(values)
+  }
+}
+
+#[cfg(feature = "bin-proto")]
+#[cfg_attr(docs_rs, doc(cfg(feature = "bin-proto")))]
+impl<Ctx, A> bin_proto::BitDecode<Ctx, bin_proto::Untagged> for TinyVec<A>
+where
+  A: Array,
+  <A as Array>::Item: bin_proto::BitDecode<Ctx>,
+{
+  fn decode<R, E>(
+    read: &mut R, ctx: &mut Ctx, _tag: bin_proto::Untagged,
+  ) -> bin_proto::Result<Self>
+  where
+    R: bin_proto::BitRead,
+    E: bin_proto::Endianness,
+  {
+    bin_proto::util::decode_items_to_eof::<_, E, _, _>(read, ctx).collect()
+  }
+}
+
 impl<A: Array> TinyVec<A> {
   /// Returns whether elements are on heap
   #[inline(always)]
