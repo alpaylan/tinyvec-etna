@@ -924,6 +924,17 @@ where
   }
 }
 
+#[cfg(feature = "defmt")]
+#[cfg_attr(docs_rs, doc(cfg(feature = "defmt")))]
+impl<'s, T> defmt::Format for SliceVec<'s, T>
+where
+  T: defmt::Format,
+{
+  fn format(&self, fmt: defmt::Formatter<'_>) {
+    defmt::Format::format(self.as_slice(), fmt)
+  }
+}
+
 impl<'s, T> Display for SliceVec<'s, T>
 where
   T: Display,
