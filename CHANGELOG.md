@@ -6,6 +6,7 @@
   parallelization in builds for downstream users.
 * add `as_mut_inner` method when the `latest_stable_rust` feature is enabled
 * add `is_full` method to check if the size is equal to the capacity
+* add `defmt` support
 
 ## 1.10
 
