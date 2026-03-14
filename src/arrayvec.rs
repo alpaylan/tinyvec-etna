@@ -628,6 +628,13 @@ impl<A: Array> ArrayVec<A> {
     self.len == 0
   }
 
+  /// Checks if the length is equal to capacity.
+  #[inline(always)]
+  #[must_use]
+  pub fn is_full(&self) -> bool {
+    self.len() == self.capacity()
+  }
+
   /// The length of the `ArrayVec` (in elements).
   #[inline(always)]
   #[must_use]
