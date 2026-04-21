@@ -64,3 +64,15 @@ witnesses = [
 ]
 frameworks = ["proptest", "quickcheck", "crabcheck", "hegel"]
 files = ["src/arrayvec.rs"]
+
+[[variant]]
+name = "swap_remove_last_71ad62a_1"
+property = "swap_remove_last_returns_tail"
+injection = "marauders"
+source_commit = "71ad62a90f2ff95dae4e43d646a55b0329b1eedc"
+witnesses = [
+    "witness_swap_remove_last_returns_tail_case_single",
+    "witness_swap_remove_last_returns_tail_case_four_elements",
+]
+frameworks = ["proptest", "quickcheck", "crabcheck", "hegel"]
+files = ["src/arrayvec.rs"]

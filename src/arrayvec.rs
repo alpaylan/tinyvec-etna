@@ -1172,12 +1172,21 @@ impl<A: Array> ArrayVec<A> {
       index,
       self.len
     );
+    /*| swap_remove_last */
     if index == self.len() - 1 {
       self.pop().unwrap()
     } else {
       let i = self.pop().unwrap();
       replace(&mut self[index], i)
     }
+    /*|| swap_remove_last_71ad62a_1 */
+    /*|
+    {
+      let i = self.pop().unwrap();
+      replace(&mut self[index], i)
+    }
+    */
+    /* |*/
   }
 
   /// Reduces the vec's length to the given value.
