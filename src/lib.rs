@@ -106,3 +106,6 @@ pub use slicevec::*;
 mod tinyvec;
 #[cfg(feature = "alloc")]
 pub use crate::tinyvec::*;
+
+#[cfg(feature = "etna")]
+pub mod etna;
