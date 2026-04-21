@@ -76,3 +76,15 @@ witnesses = [
 ]
 frameworks = ["proptest", "quickcheck", "crabcheck", "hegel"]
 files = ["src/arrayvec.rs"]
+
+[[variant]]
+name = "drain_end_off_by_one_9117614_1"
+property = "drain_matches_slice_range"
+injection = "marauders"
+source_commit = "9117614aa9d527a122dff8828e56c17d247e3f5a"
+witnesses = [
+    "witness_drain_matches_slice_range_case_exclusive_middle",
+    "witness_drain_matches_slice_range_case_full_range",
+]
+frameworks = ["proptest", "quickcheck", "crabcheck", "hegel"]
+files = ["src/arrayvec_drain.rs"]
