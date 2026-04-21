@@ -52,3 +52,15 @@ witnesses = [
 ]
 frameworks = ["proptest", "quickcheck", "crabcheck", "hegel"]
 files = ["src/arrayvec.rs"]
+
+[[variant]]
+name = "remove_past_end_silent_fd3c92c_1"
+property = "remove_past_end_panics"
+injection = "marauders"
+source_commit = "fd3c92c35109a4b025738fe71bb0fd739c3d6002"
+witnesses = [
+    "witness_remove_past_end_panics_case_single_element",
+    "witness_remove_past_end_panics_case_three_elements",
+]
+frameworks = ["proptest", "quickcheck", "crabcheck", "hegel"]
+files = ["src/arrayvec.rs"]

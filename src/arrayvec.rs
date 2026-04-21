@@ -816,21 +816,37 @@ impl<A: Array> ArrayVec<A> {
   /// ```
   #[inline]
   pub fn remove(&mut self, index: usize) -> A::Item {
-    let targets: &mut [A::Item] = &mut self.deref_mut()[index..];
-    let item = core::mem::take(&mut targets[0]);
+    /*| remove_past_end_silent */
+    {
+      let targets: &mut [A::Item] = &mut self.deref_mut()[index..];
+      let item = core::mem::take(&mut targets[0]);
 
-    // A previous implementation used rotate_left
-    // rotate_right and rotate_left generate a huge amount of code and fail to
-    // inline; calling them here incurs the cost of all the cases they
-    // handle even though we're rotating a usually-small array by a constant
-    // 1 offset. This swap-based implementation benchmarks much better for
-    // small array lengths in particular.
+      // A previous implementation used rotate_left
+      // rotate_right and rotate_left generate a huge amount of code and fail to
+      // inline; calling them here incurs the cost of all the cases they
+      // handle even though we're rotating a usually-small array by a constant
+      // 1 offset. This swap-based implementation benchmarks much better for
+      // small array lengths in particular.
 
-    for i in 0..targets.len() - 1 {
-      targets.swap(i, i + 1);
+      for i in 0..targets.len() - 1 {
+        targets.swap(i, i + 1);
+      }
+      self.len -= 1;
+      item
     }
-    self.len -= 1;
-    item
+    /*|| remove_past_end_silent_fd3c92c_1 */
+    /*|
+    {
+      let targets: &mut [A::Item] = &mut self.deref_mut()[index..];
+      let mut spare = <A::Item as Default>::default();
+      for target in targets.iter_mut().rev() {
+        spare = core::mem::replace(target, spare);
+      }
+      self.len -= 1;
+      spare
+    }
+    */
+    /* |*/
   }
 
   /// As [`resize_with`](ArrayVec::resize_with)
