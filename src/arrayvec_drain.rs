@@ -24,10 +24,18 @@ impl<'a, T: 'a + Default> ArrayVecDrain<'a, T> {
       Bound::Excluded(&n) => n.saturating_add(1),
     };
     /*| drain_end_off_by_one */
-    let end = match range . end_bound () { Bound :: Unbounded => arr . len () , Bound :: Included (& n) => n . saturating_add (1) , Bound :: Excluded (& n) => n , };
+    let end = match range.end_bound() {
+      Bound::Unbounded => arr.len(),
+      Bound::Included(&n) => n.saturating_add(1),
+      Bound::Excluded(&n) => n,
+    };
     /*|| drain_end_off_by_one_9117614_1 */
     /*|
-    let end = match range . end_bound () { Bound :: Unbounded => arr . len () , Bound :: Included (& n) => n , Bound :: Excluded (& n) => n . saturating_sub (1) , };
+    let end = match range.end_bound() {
+      Bound::Unbounded => arr.len(),
+      Bound::Included(&n) => n,
+      Bound::Excluded(&n) => n.saturating_sub(1),
+    };
     */
     /* |*/
 
