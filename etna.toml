@@ -1,0 +1,54 @@
+# ETNA workload index for tinyvec.
+#
+# One [[variant]] per injected mutation. Source of truth for variant->property
+# mapping. Every other fact is derivable from the source tree:
+#   - marauders list --path .                      (inline marauder mutations)
+#   - grep -rn "pub fn property_" src/etna.rs      (property functions)
+#   - grep -rn "fn witness_.*_case_" tests/        (witness tests)
+#
+# Base commit for this workload is 45dfe63 ("etna: scaffold framework-neutral
+# property module + runner stub") on master. Every etna/<variant> branch is
+# base + exactly one marauder converted to its functional form.
+#
+# Candidate commits dropped from this workload (terminal reasons):
+#   - 35082e1 "TinyVec::fmt - fix pretty printing"        → same bug class as a711c72 on TinyVec; keep ArrayVec
+#   - 3335c63 "Fix TinyVec::resize across inline/heap"    → pre-const-generic; resize surface has changed
+#   - 48c004d "Fix ArrayVec capacity u16::MAX"            → requires u16::MAX-sized array, impractical
+#   - 350cf62 "Fix Arbitrary implementation on ArrayVec"  → API-only reshape, no observable bug
+#   - 4cbd1db "Fix element drop order on failed insert"   → detection requires Drop tracker
+#   - 95c991d "Fix TinyVec::drain implementation"         → same bug class as 9117614 on TinyVec; keep ArrayVec
+#   - f5de234 "heap allocated capacities"                 → TinyVec-only, no ArrayVec impact
+#   - be07a98 "fixed a truncate bug"                      → pre-const-generic API change
+#   - ed749ef "SliceVec overflow on usize::MAX"           → requires usize::MAX range, impractical
+#   - all pre-const-generic (< late 2020) commits         → surface removed by const-generic
+#                                                           migration of the entire Array trait
+
+name = "tinyvec"
+language = "Rust"
+
+[workload]
+name = "tinyvec"
+crate = "tinyvec"
+language = "rust"
+description = """
+ETNA workload for the Rust `tinyvec` crate. Each variant re-introduces
+one historical bug-fix into a fresh patched branch and pairs it with a
+framework-neutral property, four PBT adapters, and a deterministic
+witness test.
+"""
+
+[runner]
+bin = "etna"
+cargo_features = ["etna"]
+
+[[variant]]
+name = "debug_alternate_empty_a711c72_1"
+property = "arrayvec_debug_matches_slice"
+injection = "marauders"
+source_commit = "a711c72eef6d555ebc7bbbe78bf5039e72f790ac"
+witnesses = [
+    "witness_arrayvec_debug_matches_slice_case_empty",
+    "witness_arrayvec_debug_matches_slice_case_three_elements",
+]
+frameworks = ["proptest", "quickcheck", "crabcheck", "hegel"]
+files = ["src/arrayvec.rs"]

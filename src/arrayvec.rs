@@ -1817,7 +1817,28 @@ where
 {
   #[allow(clippy::missing_inline_in_public_items)]
   fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
+    /*| debug_alternate_empty */
     <[A::Item] as Debug>::fmt(self.as_slice(), f)
+    /*|| debug_alternate_empty_a711c72_1 */
+    /*|
+    {
+      write!(f, "[")?;
+      if f.alternate() {
+        write!(f, "\n    ")?;
+      }
+      for (i, elem) in self.iter().enumerate() {
+        if i > 0 {
+          write!(f, ", ")?;
+        }
+        Debug::fmt(elem, f)?;
+      }
+      if f.alternate() {
+        write!(f, ",\n")?;
+      }
+      write!(f, "]")
+    }
+    */
+    /* |*/
   }
 }
 
