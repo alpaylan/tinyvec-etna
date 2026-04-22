@@ -1,90 +1,168 @@
-# ETNA workload index for tinyvec.
-#
-# One [[variant]] per injected mutation. Source of truth for variant->property
-# mapping. Every other fact is derivable from the source tree:
-#   - marauders list --path .                      (inline marauder mutations)
-#   - grep -rn "pub fn property_" src/etna.rs      (property functions)
-#   - grep -rn "fn witness_.*_case_" tests/        (witness tests)
-#
-# Base commit for this workload is 45dfe63 ("etna: scaffold framework-neutral
-# property module + runner stub") on master. Every etna/<variant> branch is
-# base + exactly one marauder converted to its functional form.
-#
-# Candidate commits dropped from this workload (terminal reasons):
-#   - 35082e1 "TinyVec::fmt - fix pretty printing"        → same bug class as a711c72 on TinyVec; keep ArrayVec
-#   - 3335c63 "Fix TinyVec::resize across inline/heap"    → pre-const-generic; resize surface has changed
-#   - 48c004d "Fix ArrayVec capacity u16::MAX"            → requires u16::MAX-sized array, impractical
-#   - 350cf62 "Fix Arbitrary implementation on ArrayVec"  → API-only reshape, no observable bug
-#   - 4cbd1db "Fix element drop order on failed insert"   → detection requires Drop tracker
-#   - 95c991d "Fix TinyVec::drain implementation"         → same bug class as 9117614 on TinyVec; keep ArrayVec
-#   - f5de234 "heap allocated capacities"                 → TinyVec-only, no ArrayVec impact
-#   - be07a98 "fixed a truncate bug"                      → pre-const-generic API change
-#   - ed749ef "SliceVec overflow on usize::MAX"           → requires usize::MAX range, impractical
-#   - all pre-const-generic (< late 2020) commits         → surface removed by const-generic
-#                                                           migration of the entire Array trait
-
 name = "tinyvec"
-language = "Rust"
-
-[workload]
-name = "tinyvec"
-crate = "tinyvec"
-language = "rust"
 description = """
 ETNA workload for the Rust `tinyvec` crate. Each variant re-introduces
 one historical bug-fix into a fresh patched branch and pairs it with a
 framework-neutral property, four PBT adapters, and a deterministic
 witness test.
 """
+language = "rust"
+crate = "tinyvec"
+base_commit = "45dfe63fba4501f3ed493ebf0589dfddf22b22d7"
 
-[runner]
-bin = "etna"
-cargo_features = ["etna"]
+[[tasks]]
+mutations = ["debug_alternate_empty_a711c72_1"]
 
-[[variant]]
-name = "debug_alternate_empty_a711c72_1"
-property = "arrayvec_debug_matches_slice"
-injection = "marauders"
-source_commit = "a711c72eef6d555ebc7bbbe78bf5039e72f790ac"
-witnesses = [
-    "witness_arrayvec_debug_matches_slice_case_empty",
-    "witness_arrayvec_debug_matches_slice_case_three_elements",
-]
-frameworks = ["proptest", "quickcheck", "crabcheck", "hegel"]
+[tasks.source]
+repo = "https://github.com/Lokathor/tinyvec"
+commits = ["a711c72eef6d555ebc7bbbe78bf5039e72f790ac"]
+commit_subjects = ["fix `Debug` alternate mode for empty containers (#162)"]
+prs = [162]
+summary = "`println!(\"{:#?}\", tiny_vec!([u8; 16]))` was printing `[\\n    ,\\n]` instead of `[]`. The manual Debug impl unconditionally emitted separator/newline tokens regardless of length."
+
+[tasks.injection]
+kind = "marauders"
 files = ["src/arrayvec.rs"]
+locations = [{ file = "src/arrayvec.rs", line = 1839, symbol = "impl<A: Array> Debug for ArrayVec<A>" }]
 
-[[variant]]
-name = "remove_past_end_silent_fd3c92c_1"
-property = "remove_past_end_panics"
-injection = "marauders"
-source_commit = "fd3c92c35109a4b025738fe71bb0fd739c3d6002"
+[tasks.bug]
+short_name = "debug_alternate_empty"
+invariant = """
+`format!("{:#?}", av)` must match `format!("{:#?}", av.as_slice())` — `ArrayVec`'s `Debug` impl must agree with the underlying slice in both plain and alternate modes, regardless of content.
+"""
+how_triggered = """
+the fix replaced the manual impl with `<[A::Item] as Debug>::fmt(self.as_slice(), f)`. The mutation reinstates the pre-a711c72 manual impl which unconditionally emits a leading `"\\n    "` and a trailing `",\\n"` in alternate mode. On an empty vec this produces `"[\\n    ,\\n]"` instead of the slice's `"[]"`, and on a populated vec the comma/newline layout differs from `[T]`'s default. `case_empty` exposes the stray comma; `case_three_elements` exposes the layout mismatch for non-empty input.
+"""
+
+[[tasks.tasks]]
+property = "ArrayvecDebugMatchesSlice"
 witnesses = [
-    "witness_remove_past_end_panics_case_single_element",
-    "witness_remove_past_end_panics_case_three_elements",
+  { test_fn = "witness_arrayvec_debug_matches_slice_case_empty" },
+  { test_fn = "witness_arrayvec_debug_matches_slice_case_three_elements" },
 ]
-frameworks = ["proptest", "quickcheck", "crabcheck", "hegel"]
+
+[[tasks]]
+mutations = ["remove_past_end_silent_fd3c92c_1"]
+
+[tasks.source]
+repo = "https://github.com/Lokathor/tinyvec"
+commits = ["fd3c92c35109a4b025738fe71bb0fd739c3d6002"]
+commit_subjects = ["Test and fix removal at past-the-end index"]
+prs = [29]
+issues = [28]
+summary = "`ArrayVec::remove(len)` silently decremented `len` and returned a default-constructed item instead of panicking, diverging from `Vec::remove`'s contract."
+
+[tasks.injection]
+kind = "marauders"
 files = ["src/arrayvec.rs"]
+locations = [{ file = "src/arrayvec.rs", line = 818, symbol = "ArrayVec::remove" }]
 
-[[variant]]
-name = "swap_remove_last_71ad62a_1"
-property = "swap_remove_last_returns_tail"
-injection = "marauders"
-source_commit = "71ad62a90f2ff95dae4e43d646a55b0329b1eedc"
+[tasks.bug]
+short_name = "remove_past_end_silent"
+invariant = "`ArrayVec::remove(index)` must panic when `index >= self.len()`, matching the `Vec::remove` contract. Silently returning a default-constructed item — and decrementing `self.len` — is both data-loss and a length-invariant violation."
+how_triggered = "the pre-fd3c92c body iterates `targets[index..].iter_mut().rev()` and returns the final `spare`. When `index == self.len()`, `targets` is empty, the iteration is a no-op, and `spare` stays `A::Item::default()`; the function then decrements `self.len` and returns the default. The fix reads `targets[0]` unconditionally, which panics on the empty slice. `case_single_element` (`remove(1)` on `[42]`) and `case_three_elements` (`remove(3)` on `[1,2,3]`) both hit `index == len` exactly."
+
+[[tasks.tasks]]
+property = "RemovePastEndPanics"
 witnesses = [
-    "witness_swap_remove_last_returns_tail_case_single",
-    "witness_swap_remove_last_returns_tail_case_four_elements",
+  { test_fn = "witness_remove_past_end_panics_case_single_element" },
+  { test_fn = "witness_remove_past_end_panics_case_three_elements" },
 ]
-frameworks = ["proptest", "quickcheck", "crabcheck", "hegel"]
+
+[[tasks]]
+mutations = ["swap_remove_last_71ad62a_1"]
+
+[tasks.source]
+repo = "https://github.com/Lokathor/tinyvec"
+commits = ["71ad62a90f2ff95dae4e43d646a55b0329b1eedc"]
+commit_subjects = ["Fix ArrayishVec::swap_remove for last element"]
+prs = [15]
+summary = "`swap_remove(len - 1)` panicked because the implementation popped first (shrinking the vec) then indexed `self[index]`, which is now out of range. Fixed by short-circuiting on the tail-index case."
+
+[tasks.injection]
+kind = "marauders"
 files = ["src/arrayvec.rs"]
+locations = [{ file = "src/arrayvec.rs", line = 1168, symbol = "ArrayVec::swap_remove" }]
 
-[[variant]]
-name = "drain_end_off_by_one_9117614_1"
-property = "drain_matches_slice_range"
-injection = "marauders"
-source_commit = "9117614aa9d527a122dff8828e56c17d247e3f5a"
+[tasks.bug]
+short_name = "swap_remove_last"
+invariant = "`swap_remove(len - 1)` must return the tail element without panicking, matching the `Vec::swap_remove` contract. Panicking on a valid in-range index is both a safety-contract violation and a correctness regression."
+how_triggered = "the pre-71ad62a body unconditionally runs `let i = self.pop().unwrap(); replace(&mut self[index], i)`. When `index == len - 1`, the `pop` call shrinks the vec to `len - 1`, and `self[index]` then indexes the (now out-of-range) final slot, triggering the slice-index panic. The fix short-circuits: when `index == len - 1`, just `pop().unwrap()`. `case_single` (`swap_remove(0)` on `[99]`) and `case_four_elements` (`swap_remove(3)` on `[1,2,3,4]`) both land on the tail-index boundary."
+
+[[tasks.tasks]]
+property = "SwapRemoveLastReturnsTail"
 witnesses = [
-    "witness_drain_matches_slice_range_case_exclusive_middle",
-    "witness_drain_matches_slice_range_case_full_range",
+  { test_fn = "witness_swap_remove_last_returns_tail_case_single" },
+  { test_fn = "witness_swap_remove_last_returns_tail_case_four_elements" },
 ]
-frameworks = ["proptest", "quickcheck", "crabcheck", "hegel"]
+
+[[tasks]]
+mutations = ["drain_end_off_by_one_9117614_1"]
+
+[tasks.source]
+repo = "https://github.com/Lokathor/tinyvec"
+commits = ["9117614aa9d527a122dff8828e56c17d247e3f5a"]
+commit_subjects = ["Fix ArrayishVec::drain implementation"]
+prs = [14]
+summary = "Model-based fuzzing against `Vec` found an underflow while calculating the end index for `drain`; the `Bound::Included`/`Bound::Excluded` mappings were swapped, so half-open `a..b` drained `a..b-1` and inclusive `a..=b` drained `a..b`."
+
+[tasks.injection]
+kind = "marauders"
 files = ["src/arrayvec_drain.rs"]
+locations = [{ file = "src/arrayvec_drain.rs", line = 26, symbol = "ArrayVecDrain::new" }]
+
+[tasks.bug]
+short_name = "drain_end_off_by_one"
+invariant = "`av.drain(a..b).collect::<Vec<_>>()` must equal `items[a..b].to_vec()` (and the remaining vec must equal `items[..a] ++ items[b..]`), matching `Vec::drain`'s semantics for both half-open and inclusive ranges."
+how_triggered = "the pre-9117614 end-bound mapping was swapped: `Bound::Included(x) => *x` (should be `x + 1`) and `Bound::Excluded(x) => x - 1` (should be `*x`). Half-open `a..b` then drains `a..b-1`, and inclusive `a..=b` drains `a..b` instead of `a..=b`. `case_exclusive_middle` (`drain(1..3)` on `[1..=5]`) exposes the half-open bug by missing the element at index 2; `case_full_range` (`drain(0..3)` on `[10,20,30]`) exposes the same mapping by drop-losing the final element."
+
+[[tasks.tasks]]
+property = "DrainMatchesSliceRange"
+witnesses = [
+  { test_fn = "witness_drain_matches_slice_range_case_exclusive_middle" },
+  { test_fn = "witness_drain_matches_slice_range_case_full_range" },
+]
+
+[[dropped]]
+commit = "35082e1"
+subject = "TinyVec::fmt - fix pretty printing"
+reason = "same bug class as a711c72 on TinyVec; keep ArrayVec"
+
+[[dropped]]
+commit = "3335c63"
+subject = "Fix TinyVec::resize across inline/heap"
+reason = "pre-const-generic; resize surface has changed"
+
+[[dropped]]
+commit = "48c004d"
+subject = "Fix ArrayVec capacity u16::MAX"
+reason = "requires u16::MAX-sized array, impractical"
+
+[[dropped]]
+commit = "350cf62"
+subject = "Fix Arbitrary implementation on ArrayVec"
+reason = "API-only reshape, no observable bug"
+
+[[dropped]]
+commit = "4cbd1db"
+subject = "Fix element drop order on failed insert"
+reason = "detection requires Drop tracker"
+
+[[dropped]]
+commit = "95c991d"
+subject = "Fix TinyVec::drain implementation"
+reason = "same bug class as 9117614 on TinyVec; keep ArrayVec"
+
+[[dropped]]
+commit = "f5de234"
+subject = "heap allocated capacities"
+reason = "TinyVec-only, no ArrayVec impact"
+
+[[dropped]]
+commit = "be07a98"
+subject = "fixed a truncate bug"
+reason = "pre-const-generic API change"
+
+[[dropped]]
+commit = "ed749ef"
+subject = "SliceVec overflow on usize::MAX"
+reason = "requires usize::MAX range, impractical"

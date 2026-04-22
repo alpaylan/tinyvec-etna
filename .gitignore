@@ -1,2 +1,6 @@
 /target
 Cargo.lock
+.migration-cache/
+.hegel/
+etna.log
+progress.jsonl
