@@ -6,6 +6,7 @@ framework-neutral property, four PBT adapters, and a deterministic
 witness test.
 """
 language = "rust"
+strategies = ["proptest", "quickcheck", "crabcheck", "hegel"]
 crate = "tinyvec"
 base_commit = "45dfe63fba4501f3ed493ebf0589dfddf22b22d7"
 
