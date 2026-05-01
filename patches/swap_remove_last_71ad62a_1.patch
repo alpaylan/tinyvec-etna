@@ -1,0 +1,21 @@
+# marauders: name=swap_remove_last
+diff --git a/src/arrayvec.rs b/src/arrayvec.rs
+--- a/src/arrayvec.rs
++++ b/src/arrayvec.rs
+@@ -1158,12 +1158,10 @@
+       index,
+       self.len
+     );
+-    if index == self.len() - 1 {
+-      self.pop().unwrap()
+-    } else {
+-      let i = self.pop().unwrap();
+-      replace(&mut self[index], i)
+-    }
++    {
++      let i = self.pop().unwrap();
++      replace(&mut self[index], i)
++    }
+   }
+ 
+   /// Reduces the vec's length to the given value.

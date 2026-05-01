@@ -1,0 +1,28 @@
+# marauders: name=debug_alternate_empty
+diff --git a/src/arrayvec.rs b/src/arrayvec.rs
+--- a/src/arrayvec.rs
++++ b/src/arrayvec.rs
+@@ -1819,7 +1819,22 @@
+ {
+   #[allow(clippy::missing_inline_in_public_items)]
+   fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
+-    <[A::Item] as Debug>::fmt(self.as_slice(), f)
++    {
++      write!(f, "[")?;
++      if f.alternate() {
++        write!(f, "\n    ")?;
++      }
++      for (i, elem) in self.iter().enumerate() {
++        if i > 0 {
++          write!(f, ", ")?;
++        }
++        Debug::fmt(elem, f)?;
++      }
++      if f.alternate() {
++        write!(f, ",\n")?;
++      }
++      write!(f, "]")
++    }
+   }
+ }
+ 

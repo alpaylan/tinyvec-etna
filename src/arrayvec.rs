@@ -816,7 +816,6 @@ impl<A: Array> ArrayVec<A> {
   /// ```
   #[inline]
   pub fn remove(&mut self, index: usize) -> A::Item {
-    /*| remove_past_end_silent */
     {
       let targets: &mut [A::Item] = &mut self.deref_mut()[index..];
       let item = core::mem::take(&mut targets[0]);
@@ -834,19 +833,6 @@ impl<A: Array> ArrayVec<A> {
       self.len -= 1;
       item
     }
-    /*|| remove_past_end_silent_fd3c92c_1 */
-    /*|
-    {
-      let targets: &mut [A::Item] = &mut self.deref_mut()[index..];
-      let mut spare = <A::Item as Default>::default();
-      for target in targets.iter_mut().rev() {
-        spare = core::mem::replace(target, spare);
-      }
-      self.len -= 1;
-      spare
-    }
-    */
-    /* |*/
   }
 
   /// As [`resize_with`](ArrayVec::resize_with)
@@ -1172,21 +1158,12 @@ impl<A: Array> ArrayVec<A> {
       index,
       self.len
     );
-    /*| swap_remove_last */
     if index == self.len() - 1 {
       self.pop().unwrap()
     } else {
       let i = self.pop().unwrap();
       replace(&mut self[index], i)
     }
-    /*|| swap_remove_last_71ad62a_1 */
-    /*|
-    {
-      let i = self.pop().unwrap();
-      replace(&mut self[index], i)
-    }
-    */
-    /* |*/
   }
 
   /// Reduces the vec's length to the given value.
@@ -1842,28 +1819,7 @@ where
 {
   #[allow(clippy::missing_inline_in_public_items)]
   fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
-    /*| debug_alternate_empty */
     <[A::Item] as Debug>::fmt(self.as_slice(), f)
-    /*|| debug_alternate_empty_a711c72_1 */
-    /*|
-    {
-      write!(f, "[")?;
-      if f.alternate() {
-        write!(f, "\n    ")?;
-      }
-      for (i, elem) in self.iter().enumerate() {
-        if i > 0 {
-          write!(f, ", ")?;
-        }
-        Debug::fmt(elem, f)?;
-      }
-      if f.alternate() {
-        write!(f, ",\n")?;
-      }
-      write!(f, "]")
-    }
-    */
-    /* |*/
   }
 }
 

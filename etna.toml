@@ -21,7 +21,8 @@ prs = [162]
 summary = "`println!(\"{:#?}\", tiny_vec!([u8; 16]))` was printing `[\\n    ,\\n]` instead of `[]`. The manual Debug impl unconditionally emitted separator/newline tokens regardless of length."
 
 [tasks.injection]
-kind = "marauders"
+kind = "patch"
+patch = "patches/debug_alternate_empty_a711c72_1.patch"
 files = ["src/arrayvec.rs"]
 locations = [{ file = "src/arrayvec.rs", line = 1839, symbol = "impl<A: Array> Debug for ArrayVec<A>" }]
 
@@ -53,7 +54,8 @@ issues = [28]
 summary = "`ArrayVec::remove(len)` silently decremented `len` and returned a default-constructed item instead of panicking, diverging from `Vec::remove`'s contract."
 
 [tasks.injection]
-kind = "marauders"
+kind = "patch"
+patch = "patches/remove_past_end_silent_fd3c92c_1.patch"
 files = ["src/arrayvec.rs"]
 locations = [{ file = "src/arrayvec.rs", line = 818, symbol = "ArrayVec::remove" }]
 
@@ -80,7 +82,8 @@ prs = [15]
 summary = "`swap_remove(len - 1)` panicked because the implementation popped first (shrinking the vec) then indexed `self[index]`, which is now out of range. Fixed by short-circuiting on the tail-index case."
 
 [tasks.injection]
-kind = "marauders"
+kind = "patch"
+patch = "patches/swap_remove_last_71ad62a_1.patch"
 files = ["src/arrayvec.rs"]
 locations = [{ file = "src/arrayvec.rs", line = 1168, symbol = "ArrayVec::swap_remove" }]
 
@@ -107,7 +110,8 @@ prs = [14]
 summary = "Model-based fuzzing against `Vec` found an underflow while calculating the end index for `drain`; the `Bound::Included`/`Bound::Excluded` mappings were swapped, so half-open `a..b` drained `a..b-1` and inclusive `a..=b` drained `a..b`."
 
 [tasks.injection]
-kind = "marauders"
+kind = "patch"
+patch = "patches/drain_end_off_by_one_9117614_1.patch"
 files = ["src/arrayvec_drain.rs"]
 locations = [{ file = "src/arrayvec_drain.rs", line = 26, symbol = "ArrayVecDrain::new" }]
 
