@@ -1,0 +1,21 @@
+# marauders: name=drain_end_off_by_one
+diff --git a/src/arrayvec_drain.rs b/src/arrayvec_drain.rs
+--- a/src/arrayvec_drain.rs
++++ b/src/arrayvec_drain.rs
+@@ -23,11 +23,11 @@
+       Bound::Included(&n) => n,
+       Bound::Excluded(&n) => n.saturating_add(1),
+     };
+-    let end = match range.end_bound() {
+-      Bound::Unbounded => arr.len(),
+-      Bound::Included(&n) => n.saturating_add(1),
+-      Bound::Excluded(&n) => n,
+-    };
++    let end = match range.end_bound() {
++      Bound::Unbounded => arr.len(),
++      Bound::Included(&n) => n,
++      Bound::Excluded(&n) => n.saturating_sub(1),
++    };
+ 
+     assert!(
+       start <= end,
